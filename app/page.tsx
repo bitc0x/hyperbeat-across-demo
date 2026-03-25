@@ -27,16 +27,14 @@ const USDC_BY_CHAIN: Record<string, string> = {
 const OUTPUT_TOKEN    = "0x2000000000000000000000000000000000000168"; // USDH on HyperCore
 const HL_CHAIN_ID  = "1337"; // HyperCore — where Across delivers USDH
 
-// Poll Hyperliquid spot balance for USDH (lands in HyperCore spot via chain 1337)
-async function getOutputBalance(address: string): Promise<number> {
-  const res = await fetch("https://api.hyperliquid.xyz/info", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "spotClearinghouseState", user: address }),
-  });
+// Poll Across deposit status — returns filled + fillTx immediately when bridged
+async function pollDepositStatus(opts: { depositAddress: string } | { depositTxHash: string; originChainId: string }): Promise<{ status: string; fillTx?: string; outputAmount?: string }> {
+  const qs = "depositAddress" in opts
+    ? `depositAddress=${opts.depositAddress}&index=0`
+    : `depositTxHash=${opts.depositTxHash}&originChainId=${opts.originChainId}`;
+  const res = await fetch(`/api/deposit-status?${qs}`);
   const json = await res.json();
-  const usdh = json.balances?.find((b: { coin: string; total: string }) => b.coin === "USDH");
-  return usdh ? parseFloat(usdh.total) : 0;
+  return { status: json.status ?? "pending", fillTx: json.fillTx, outputAmount: json.outputAmount };
 }
 
 const SOURCE_CHAINS = [
@@ -332,25 +330,19 @@ function DepositDemo() {
 
   const startPolling = useCallback(async () => {
     setStep("polling");
-    let baseline = 0;
-    try { baseline = await getOutputBalance(recipient.trim()); } catch { /* start from 0 */ }
     const interval = setInterval(async () => {
       try {
-        const current = await getOutputBalance(recipient.trim());
-        if (current > baseline) {
+        const { status, fillTx } = await pollDepositStatus({ depositAddress: depositAddr });
+        if (status === "filled") {
           clearInterval(interval); pollRef.current = null;
-          setFillAmt((current - baseline).toFixed(6).replace(/\.?0+$/, ""));
-          try {
-            const sr = await fetch(`/api/deposit-status?depositAddress=${depositAddr}&index=0`);
-            const sd = await sr.json();
-            if (sd.fillTx) setFillTxHash(sd.fillTx);
-          } catch { /* link will fallback */ }
+          if (fillTx) setFillTxHash(fillTx);
+          setFillAmt(outputAmt);
           setStep("filled");
         }
       } catch { /* keep polling */ }
     }, 200);
     pollRef.current = interval;
-  }, [recipient]);
+  }, [depositAddr, outputAmt]);
 
   const copy = useCallback(() => {
     navigator.clipboard.writeText(depositAddr).catch(() => {});
@@ -537,7 +529,6 @@ function WalletDemo() {
   const [txHash, setTxHash] = useState("");
   const [fillAmt, setFillAmt] = useState("");
   const [fillTxHash, setFillTxHash] = useState("");
-  const [baseline, setBaseline] = useState(0);
   const [errorMsg, setErrMsg] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -574,7 +565,6 @@ function WalletDemo() {
         to: data.to ?? data.swapTx?.to ?? "",
         value: data.value ?? data.swapTx?.value ?? "0",
       });
-      try { setBaseline(await getOutputBalance(recipient.trim())); } catch { setBaseline(0); }
     } catch (err: unknown) {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setStep("idle");
@@ -596,15 +586,11 @@ function WalletDemo() {
       setTxHash(hash);
       const interval = setInterval(async () => {
         try {
-          const current = await getOutputBalance(recipient.trim());
-          if (current > baseline) {
+          const { status, fillTx } = await pollDepositStatus({ depositTxHash: hash, originChainId: chainId });
+          if (status === "filled") {
             clearInterval(interval); pollRef.current = null;
-            setFillAmt((current - baseline).toFixed(6).replace(/\.?0+$/, ""));
-            try {
-              const sr = await fetch(`/api/deposit-status?depositTxHash=${hash}&originChainId=${chainId}`);
-              const sd = await sr.json();
-              if (sd.fillTx) setFillTxHash(sd.fillTx);
-            } catch { /* link will fallback */ }
+            if (fillTx) setFillTxHash(fillTx);
+            setFillAmt(amount);
             setStep("done");
           }
         } catch { /* keep polling */ }
@@ -614,7 +600,7 @@ function WalletDemo() {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setStep("quoting");
     }
-  }, [quote, chainId, switchChainAsync, sendTransactionAsync, recipient, baseline]);
+  }, [quote, chainId, switchChainAsync, sendTransactionAsync, recipient, amount, chainId]);
 
   const pct = ({ idle: 0, quoting: 30, signing: 60, bridging: 80, done: 100 } as Record<string, number>)[step] ?? 0;
   const order: WalletStep[] = ["signing", "bridging", "done"];
