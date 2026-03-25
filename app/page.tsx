@@ -220,7 +220,7 @@ function StatBox({ label, value }: { label: string; value: string }) {
 function DepositDemo() {
   const [step, setStep] = useState<DepositStep>("idle");
   const [chainId, setChainId] = useState("42161");
-  const [amount, setAmount] = useState("100");
+  const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
   const [depositAddr, setDepositAddr] = useState("");
   const [outputAmt, setOutputAmt] = useState("");
@@ -475,7 +475,7 @@ function WalletDemo() {
   const { sendTransactionAsync } = useSendTransaction();
 
   const [chainId, setChainId] = useState("42161");
-  const [amount, setAmt] = useState("100");
+  const [amount, setAmt] = useState("");
   const [recipient, setRecip] = useState("");
   const [step, setStep] = useState<WalletStep>("idle");
   const [quote, setQuote] = useState<{ fee: string; out: string; calldata: string; to: string; value: string } | null>(null);
