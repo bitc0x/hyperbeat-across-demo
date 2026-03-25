@@ -787,7 +787,7 @@ export default function Home() {
               <span style={{ color: HB_GREEN }}>Land on Hyperliquid.</span>
             </h1>
             <p style={{ fontSize: 15, color: HB_MUTED, lineHeight: 1.7, maxWidth: 580 }}>
-              Across generates a unique deposit address per user. Send USDC from Arbitrum, Ethereum, or Base.
+              Across generates a unique deposit address per user. Send USDC from any chain.
               It arrives as USDH on Hyperliquid in approximately 2 seconds. No wallet connection required. Zero fees to the end user.
             </p>
           </div>
