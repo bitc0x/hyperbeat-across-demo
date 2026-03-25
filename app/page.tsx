@@ -820,13 +820,7 @@ export default function Home() {
             {mode === "deposit" ? <DepositDemo /> : <WalletDemo />}
           </div>
 
-          {/* Footer note */}
-          <div style={{ marginTop: 20, fontSize: 12, color: HB_MUTED2, textAlign: "center", lineHeight: 1.6 }}>
-            This PoC uses the Across Swap API with integrator ID{" "}
-            <span style={{ fontFamily: "monospace", color: HB_MUTED }}>0x00ce</span>.
-            Deposit address endpoint:{" "}
-            <span style={{ fontFamily: "monospace", color: HB_MUTED }}>/api/swap/counterfactual</span>.
-          </div>
+
         </main>
       </div>
     </>
