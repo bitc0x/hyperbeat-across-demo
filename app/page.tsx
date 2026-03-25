@@ -21,8 +21,6 @@ type WalletStep  = "idle" | "quoting" | "signing" | "bridging" | "done";
 
 const USDC_BY_CHAIN: Record<string, string> = {
   "42161": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-  "1":     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  "8453":  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
 };
 const OUTPUT_TOKEN    = "0x2000000000000000000000000000000000000168"; // USDH on HyperCore
 const HL_CHAIN_ID  = "1337"; // HyperCore — where Across delivers USDH
@@ -39,8 +37,6 @@ async function pollDepositStatus(opts: { depositAddress: string } | { depositTxH
 
 const SOURCE_CHAINS = [
   { label: "Arbitrum", id: "42161", logo: "https://alexandria-blond.vercel.app/assets/chains/arbitrum.svg" },
-  { label: "Ethereum", id: "1",     logo: "https://alexandria-blond.vercel.app/assets/chains/mainnet.svg" },
-  { label: "Base",     id: "8453",  logo: "https://alexandria-blond.vercel.app/assets/chains/base.svg" },
 ];
 const HYPERCORE_LOGO = "https://alexandria-blond.vercel.app/assets/chains/hypercore.svg";
 
