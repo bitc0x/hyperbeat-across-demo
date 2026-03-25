@@ -25,26 +25,16 @@ const USDC_BY_CHAIN: Record<string, string> = {
   "8453":  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
 };
 const USDH_API_TOKEN  = "0x2000000000000000000000000000000000000168"; // USDH as Across API knows it (outputToken param)
-const USDH_ERC20      = "0x111111a1a0667d36bd57c0a9f569b98057111111"; // USDH ERC-20 on HyperEVM (for balanceOf polling)
 const HL_CHAIN_ID  = "1337";
-const HYPER_EVM_RPC = "https://rpc.hyperliquid.xyz/evm";
 
-async function getUsdhBalance(address: string): Promise<number> {
-  // balanceOf(address) on HyperEVM via eth_call
-  const padded = address.replace("0x", "").toLowerCase().padStart(64, "0");
-  const data = "0x70a08231" + padded;
-  const res = await fetch(HYPER_EVM_RPC, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0", id: 1, method: "eth_call",
-      params: [{ to: USDH_ERC20, data }, "latest"],
-    }),
-  });
+// Poll Across deposit status API — chain-agnostic, works regardless of where USDH lands
+async function getDepositStatus(opts: { depositAddress: string } | { depositTxHash: string; originChainId: string }): Promise<string> {
+  const qs = "depositAddress" in opts
+    ? `depositAddress=${opts.depositAddress}&index=0`
+    : `depositTxHash=${opts.depositTxHash}&originChainId=${opts.originChainId}`;
+  const res = await fetch(`/api/deposit-status?${qs}`);
   const json = await res.json();
-  if (!json.result || json.result === "0x") return 0;
-  // USDH has 6 decimals (same as USDC)
-  return parseInt(json.result, 16) / 1_000_000;
+  return json.status ?? "pending";
 }
 
 const SOURCE_CHAINS = [
@@ -339,20 +329,17 @@ function DepositDemo() {
 
   const startPolling = useCallback(async () => {
     setStep("polling");
-    let baseline = 0;
-    try { baseline = await getUsdhBalance(recipient.trim()); } catch { /* start from 0 */ }
-
     const interval = setInterval(async () => {
       try {
-        const current = await getUsdhBalance(recipient.trim());
-        if (current > baseline) {
+        const status = await getDepositStatus({ depositAddress: depositAddr });
+        if (status === "filled") {
           clearInterval(interval); pollRef.current = null;
-          setFillAmt((current - baseline).toFixed(4)); setStep("filled");
+          setFillAmt(outputAmt); setStep("filled");
         }
       } catch { /* keep polling */ }
     }, 200);
     pollRef.current = interval;
-  }, [recipient]);
+  }, [depositAddr, outputAmt]);
 
   const copy = useCallback(() => {
     navigator.clipboard.writeText(depositAddr).catch(() => {});
@@ -536,7 +523,6 @@ function WalletDemo() {
   const [quote, setQuote] = useState<{ calldata: string; to: string; value: string } | null>(null);
   const [txHash, setTxHash] = useState("");
   const [fillAmt, setFillAmt] = useState("");
-  const [baseline, setBaseline] = useState(0);
   const [errorMsg, setErrMsg] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -573,7 +559,7 @@ function WalletDemo() {
         to: data.to ?? data.swapTx?.to ?? "",
         value: data.value ?? data.swapTx?.value ?? "0",
       });
-      try { setBaseline(await getUsdhBalance(recipient.trim())); } catch { setBaseline(0); }
+      // baseline no longer needed — polling via deposit status API
     } catch (err: unknown) {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setStep("idle");
@@ -595,10 +581,10 @@ function WalletDemo() {
       setTxHash(hash);
       const interval = setInterval(async () => {
         try {
-          const current = await getUsdhBalance(recipient.trim());
-          if (current > baseline) {
+          const status = await getDepositStatus({ depositTxHash: hash, originChainId: chainId });
+          if (status === "filled") {
             clearInterval(interval); pollRef.current = null;
-            setFillAmt((current - baseline).toFixed(4)); setStep("done");
+            setFillAmt(amount); setStep("done");
           }
         } catch { /* keep polling */ }
       }, 200);
