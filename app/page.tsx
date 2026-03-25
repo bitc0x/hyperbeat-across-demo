@@ -28,13 +28,13 @@ const OUTPUT_TOKEN    = "0x2000000000000000000000000000000000000168"; // USDH on
 const HL_CHAIN_ID  = "1337"; // HyperCore — where Across delivers USDH
 
 // Poll Across deposit status — returns filled + fillTx immediately when bridged
-async function pollDepositStatus(opts: { depositAddress: string } | { depositTxHash: string; originChainId: string }): Promise<{ status: string; fillTx?: string; outputAmount?: string }> {
+async function pollDepositStatus(opts: { depositAddress: string } | { depositTxHash: string; originChainId: string }): Promise<{ status: string; depositTxHash?: string; fillTx?: string }> {
   const qs = "depositAddress" in opts
     ? `depositAddress=${opts.depositAddress}&index=0`
     : `depositTxHash=${opts.depositTxHash}&originChainId=${opts.originChainId}`;
   const res = await fetch(`/api/deposit-status?${qs}`);
   const json = await res.json();
-  return { status: json.status ?? "pending", fillTx: json.fillTx, outputAmount: json.outputAmount };
+  return { status: json.status ?? "pending", depositTxHash: json.depositTxHash, fillTx: json.fillTx };
 }
 
 const SOURCE_CHAINS = [
@@ -332,10 +332,10 @@ function DepositDemo() {
     setStep("polling");
     const interval = setInterval(async () => {
       try {
-        const { status, fillTx } = await pollDepositStatus({ depositAddress: depositAddr });
+        const { status, depositTxHash } = await pollDepositStatus({ depositAddress: depositAddr });
         if (status === "filled") {
           clearInterval(interval); pollRef.current = null;
-          if (fillTx) setFillTxHash(fillTx);
+          if (depositTxHash) setFillTxHash(depositTxHash);
           setFillAmt(outputAmt);
           setStep("filled");
         }
@@ -586,10 +586,10 @@ function WalletDemo() {
       setTxHash(hash);
       const interval = setInterval(async () => {
         try {
-          const { status, fillTx } = await pollDepositStatus({ depositTxHash: hash, originChainId: chainId });
+          const { status, depositTxHash } = await pollDepositStatus({ depositTxHash: hash, originChainId: chainId });
           if (status === "filled") {
             clearInterval(interval); pollRef.current = null;
-            if (fillTx) setFillTxHash(fillTx);
+            if (depositTxHash) setFillTxHash(depositTxHash);
             setFillAmt(amount);
             setStep("done");
           }
