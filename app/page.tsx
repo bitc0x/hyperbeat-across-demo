@@ -290,8 +290,8 @@ function DepositDemo() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <InfoBox>
         <strong style={{ color: HB_TEXT }}>Omnichain deposit address.</strong>{" "}
-        Across generates a unique address that accepts USDC from any chain and routes it to your Hyperliquid account as USDH.
-        No wallet connection required. Hyperbeat absorbs the bridge cost so users receive 1:1 with zero fees.
+        Across generates a unique address that accepts USDC from any chain and delivers it 1:1, no slippage, as USDH in Hypercore.
+        No wallet connection required.
       </InfoBox>
 
       {/* Flow header */}
@@ -451,7 +451,7 @@ function DepositDemo() {
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: HB_MUTED }}>
         <div style={{ width: 6, height: 6, borderRadius: "50%", background: A_ORANGE, animation: "pulse 1.5s infinite" }} />
         Powered by <AcrossLogo size={16} />
-        <span style={{ color: HB_TEXT, fontWeight: 600 }}>Across Protocol</span>
+        <span style={{ color: HB_TEXT, fontWeight: 600 }}>Across</span>
       </div>
     </div>
   );
@@ -711,7 +711,7 @@ function WalletDemo() {
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: HB_MUTED }}>
         <div style={{ width: 6, height: 6, borderRadius: "50%", background: A_ORANGE, animation: "pulse 1.5s infinite" }} />
         Powered by <AcrossLogo size={16} />
-        <span style={{ color: HB_TEXT, fontWeight: 600 }}>Across Protocol</span>
+        <span style={{ color: HB_TEXT, fontWeight: 600 }}>Across</span>
       </div>
     </div>
   );
