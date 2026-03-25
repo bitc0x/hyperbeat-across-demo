@@ -379,7 +379,7 @@ function DepositDemo() {
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <img src={HYPERCORE_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
+            <img src={HYPERCORE_LOGO} alt="Hypercore" width={16} height={16} style={{ borderRadius: 3 }} />
             <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hypercore</div>
           </div>
         </div>
@@ -424,7 +424,7 @@ function DepositDemo() {
       {(["waiting", "polling", "filled"] as DepositStep[]).includes(step) && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            <StatBox label="You send" value={`${amount} USDH`} />
+            <StatBox label="You send" value={`${amount} USDC`} />
             <StatBox label="Bridge fee" value="$0.00" />
             <StatBox label="Recipient receives" value={`${outputAmt} USDH`} />
           </div>
@@ -465,7 +465,7 @@ function DepositDemo() {
             <div style={{ background: HB_GREEN + "0A", border: `1px solid ${HB_GREEN}22`, borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: HB_GREEN, animation: "pulse 1.5s infinite", flexShrink: 0 }} />
               <div style={{ fontSize: 13, color: HB_TEXT }}>
-                Watching USDH balance for{" "}
+                Tracking settlement for{" "}
                 <span style={{ fontFamily: "monospace", fontSize: 11, color: HB_MUTED }}>{shortAddr(recipient)}</span>
                 <span style={{ color: HB_MUTED }}> checking every 200ms</span>
               </div>
@@ -600,7 +600,7 @@ function WalletDemo() {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setStep("quoting");
     }
-  }, [quote, chainId, switchChainAsync, sendTransactionAsync, recipient, amount, chainId]);
+  }, [quote, chainId, switchChainAsync, sendTransactionAsync, recipient, amount]);
 
   const pct = ({ idle: 0, quoting: 30, signing: 60, bridging: 80, done: 100 } as Record<string, number>)[step] ?? 0;
   const order: WalletStep[] = ["signing", "bridging", "done"];
@@ -633,7 +633,7 @@ function WalletDemo() {
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <img src={HYPERCORE_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
+            <img src={HYPERCORE_LOGO} alt="Hypercore" width={16} height={16} style={{ borderRadius: 3 }} />
             <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hypercore</div>
           </div>
         </div>
@@ -683,7 +683,7 @@ function WalletDemo() {
       {quote && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            <StatBox label="You send" value={`${amount} USDH`} />
+            <StatBox label="You send" value={`${amount} USDC`} />
             <StatBox label="Bridge fee" value="$0.00" />
             <StatBox label="Recipient receives" value={`${amount} USDH`} />
           </div>
@@ -695,7 +695,7 @@ function WalletDemo() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {([
                 { key: "signing" as WalletStep, label: "Wallet signature confirmed" },
-                { key: "bridging" as WalletStep, label: "Relayer filling, delivering USDC to Hypercore..." },
+                { key: "bridging" as WalletStep, label: "Relayer filling, delivering USDH to Hypercore..." },
                 { key: "done" as WalletStep, label: `+${formatAmt(fillAmt)} USDH delivered on Hypercore` },
               ]).map(({ key, label }) => {
                 const ci = order.indexOf(step), mi = order.indexOf(key);
@@ -826,7 +826,7 @@ export default function Home() {
               <span style={{ color: HB_GREEN }}>One address. Any chain. Into Hypercore.</span>
             </h1>
             <p style={{ fontSize: 15, color: HB_MUTED, lineHeight: 1.7, maxWidth: 580 }}>
-              Today users see a warning telling them which chain to use, and some leave. Across generates one deposit address per user that accepts USDC from any chain and delivers it 1:1, no slippage, zero fees, as USDH directly on HyperEVM. No wrong-network warnings. No wallet connection required. No drop-off.
+              Today users see a warning telling them which chain to use, and some leave. Across generates one deposit address per user that accepts USDC from any chain and delivers it 1:1, no slippage, zero fees, as USDH directly on Hypercore. No wrong-network warnings. No wallet connection required. No drop-off.
             </p>
           </div>
 
