@@ -467,7 +467,6 @@ function DepositDemo() {
               <div style={{ fontSize: 13, color: HB_TEXT }}>
                 Tracking settlement for{" "}
                 <span style={{ fontFamily: "monospace", fontSize: 11, color: HB_MUTED }}>{shortAddr(recipient)}</span>
-                <span style={{ color: HB_MUTED }}> checking every 200ms</span>
               </div>
             </div>
           )}
