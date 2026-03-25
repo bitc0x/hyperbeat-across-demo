@@ -486,7 +486,7 @@ function DepositDemo() {
                 </div>
               </div>
               <a
-                href="https://app.across.to/transfers?status=all&page=0"
+                href={`https://app.across.to/transactions?search=${depositAddr}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{
@@ -726,7 +726,7 @@ function WalletDemo() {
                 </div>
               )}
               <a
-                href="https://app.across.to/transfers?status=all&page=0"
+                href={`https://app.across.to/transactions?search=${txHash}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{
