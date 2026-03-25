@@ -220,9 +220,20 @@ function StatBox({ label, value }: { label: string; value: string }) {
 // ---- Chain Select ----
 function ChainSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const selected = SOURCE_CHAINS.find(c => c.id === value)!;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
   return (
-    <div style={{ position: "relative" }}>
+    <div ref={ref} style={{ position: "relative" }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{
@@ -521,7 +532,7 @@ function WalletDemo() {
   const [amount, setAmt] = useState("");
   const [recipient, setRecip] = useState("");
   const [step, setStep] = useState<WalletStep>("idle");
-  const [quote, setQuote] = useState<{ fee: string; out: string; calldata: string; to: string; value: string } | null>(null);
+  const [quote, setQuote] = useState<{ calldata: string; to: string; value: string } | null>(null);
   const [txHash, setTxHash] = useState("");
   const [fillAmt, setFillAmt] = useState("");
   const [baseline, setBaseline] = useState(0);
@@ -557,7 +568,6 @@ function WalletDemo() {
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error ?? JSON.stringify(data));
       setQuote({
-        fee: "0.00", out: amount,
         calldata: data.calldata ?? data.swapTx?.data ?? "",
         to: data.to ?? data.swapTx?.to ?? "",
         value: data.value ?? data.swapTx?.value ?? "0",
@@ -596,7 +606,7 @@ function WalletDemo() {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setStep("quoting");
     }
-  }, [quote, chainId, switchChainAsync, sendTransactionAsync, recipient, baseline, pollRef]);
+  }, [quote, chainId, switchChainAsync, sendTransactionAsync, recipient, baseline]);
 
   const pct = ({ idle: 0, quoting: 30, signing: 60, bridging: 80, done: 100 } as Record<string, number>)[step] ?? 0;
   const order: WalletStep[] = ["signing", "bridging", "done"];
@@ -692,7 +702,7 @@ function WalletDemo() {
               {([
                 { key: "signing" as WalletStep, label: "Wallet signature confirmed" },
                 { key: "bridging" as WalletStep, label: "Relayer filling, delivering USDH to Hyperliquid..." },
-                { key: "done" as WalletStep, label: `+${fillAmt} USDH delivered on Hyperliquid` },
+                { key: "done" as WalletStep, label: `+${formatAmt(fillAmt)} USDH delivered on Hyperliquid` },
               ]).map(({ key, label }) => {
                 const ci = order.indexOf(step), mi = order.indexOf(key);
                 const isDone = ci > mi || (step === "done" && key === "done");
@@ -768,7 +778,6 @@ export default function Home() {
           line-height: 1.5;
           -webkit-font-smoothing: antialiased;
         }
-        select option { background: ${HB_CARD}; color: ${HB_TEXT}; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
