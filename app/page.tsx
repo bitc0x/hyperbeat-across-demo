@@ -26,6 +26,25 @@ const USDC_BY_CHAIN: Record<string, string> = {
 };
 const USDH_ADDRESS = "0x2000000000000000000000000000000000000168";
 const HL_CHAIN_ID  = "1337";
+const HYPER_EVM_RPC = "https://rpc.hyperliquid.xyz/evm";
+
+async function getUsdhBalance(address: string): Promise<number> {
+  // balanceOf(address) on HyperEVM via eth_call
+  const padded = address.replace("0x", "").toLowerCase().padStart(64, "0");
+  const data = "0x70a08231" + padded;
+  const res = await fetch(HYPER_EVM_RPC, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0", id: 1, method: "eth_call",
+      params: [{ to: USDH_ADDRESS, data }, "latest"],
+    }),
+  });
+  const json = await res.json();
+  if (!json.result || json.result === "0x") return 0;
+  // USDH has 6 decimals (same as USDC)
+  return parseInt(json.result, 16) / 1_000_000;
+}
 
 const SOURCE_CHAINS = [
   { label: "Arbitrum", id: "42161" },
@@ -248,27 +267,11 @@ function DepositDemo() {
   const startPolling = useCallback(async () => {
     setStep("polling");
     let baseline = 0;
-    try {
-      const res = await fetch("https://api.hyperliquid.xyz/info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "spotClearinghouseState", user: recipient.trim() }),
-      });
-      const data = await res.json();
-      const usdh = data.balances?.find((b: { coin: string; total: string }) => b.coin === "USDH");
-      baseline = usdh ? parseFloat(usdh.total) : 0;
-    } catch { /* start from 0 */ }
+    try { baseline = await getUsdhBalance(recipient.trim()); } catch { /* start from 0 */ }
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("https://api.hyperliquid.xyz/info", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "spotClearinghouseState", user: recipient.trim() }),
-        });
-        const data = await res.json();
-        const usdh = data.balances?.find((b: { coin: string; total: string }) => b.coin === "USDH");
-        const current = usdh ? parseFloat(usdh.total) : 0;
+        const current = await getUsdhBalance(recipient.trim());
         if (current > baseline) {
           clearInterval(interval); (pollRef as unknown as { 0: null })[0] = null;
           setFillAmt((current - baseline).toFixed(4)); setStep("filled");
@@ -503,15 +506,7 @@ function WalletDemo() {
         to: data.to ?? data.swapTx?.to ?? "",
         value: data.value ?? data.swapTx?.value ?? "0",
       });
-      try {
-        const br = await fetch("https://api.hyperliquid.xyz/info", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "spotClearinghouseState", user: recipient.trim() }),
-        });
-        const bd = await br.json();
-        const usdh = bd.balances?.find((b: { coin: string; total: string }) => b.coin === "USDH");
-        setBaseline(usdh ? parseFloat(usdh.total) : 0);
-      } catch { setBaseline(0); }
+      try { setBaseline(await getUsdhBalance(recipient.trim())); } catch { setBaseline(0); }
     } catch (err: unknown) {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setStep("idle");
@@ -533,13 +528,7 @@ function WalletDemo() {
       setTxHash(hash);
       const interval = setInterval(async () => {
         try {
-          const res = await fetch("https://api.hyperliquid.xyz/info", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: "spotClearinghouseState", user: recipient.trim() }),
-          });
-          const data = await res.json();
-          const usdh = data.balances?.find((b: { coin: string; total: string }) => b.coin === "USDH");
-          const current = usdh ? parseFloat(usdh.total) : 0;
+          const current = await getUsdhBalance(recipient.trim());
           if (current > baseline) {
             clearInterval(interval); (pollRef as unknown as { 0: null })[0] = null;
             setFillAmt((current - baseline).toFixed(4)); setStep("done");
