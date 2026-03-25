@@ -277,7 +277,7 @@ function DepositDemo() {
           setFillAmt((current - baseline).toFixed(4)); setStep("filled");
         }
       } catch { /* keep polling */ }
-    }, 500);
+    }, 200);
     (pollRef as unknown as { 0: ReturnType<typeof setInterval> })[0] = interval;
   }, [recipient, pollRef]);
 
@@ -534,7 +534,7 @@ function WalletDemo() {
             setFillAmt((current - baseline).toFixed(4)); setStep("done");
           }
         } catch { /* keep polling */ }
-      }, 500);
+      }, 200);
       (pollRef as unknown as { 0: ReturnType<typeof setInterval> })[0] = interval;
     } catch (err: unknown) {
       setErrMsg(err instanceof Error ? err.message : String(err));
