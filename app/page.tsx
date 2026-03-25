@@ -67,7 +67,7 @@ function AcrossLogo({ size = LOGO_SIZE }: { size?: number }) {
 function HyperbeatIcon({ size = LOGO_SIZE }: { size?: number }) {
   return (
     <img
-      src="/hyperbeat-icon.png"
+      src="/hyperbeat-icon.svg"
       alt="Hyperbeat icon"
       width={size}
       height={size}
