@@ -6,14 +6,21 @@ const API_KEY    = process.env.ACROSS_API_KEY!
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const depositAddress = searchParams.get('depositAddress')
+  const depositTxHash  = searchParams.get('depositTxHash')
+  const originChainId  = searchParams.get('originChainId')
   const index          = searchParams.get('index') ?? '0'
 
-  if (!depositAddress) {
-    return NextResponse.json({ error: 'Missing depositAddress' }, { status: 400 })
+  let params: URLSearchParams
+
+  if (depositAddress) {
+    params = new URLSearchParams({ depositAddress, index })
+  } else if (depositTxHash && originChainId) {
+    params = new URLSearchParams({ depositTxHash, originChainId })
+  } else {
+    return NextResponse.json({ error: 'Provide depositAddress or depositTxHash+originChainId' }, { status: 400 })
   }
 
   try {
-    const params = new URLSearchParams({ depositAddress, index })
     const res = await fetch(`${ACROSS_API}/deposit/status?${params}`, {
       headers: { Authorization: `Bearer ${API_KEY}` },
       cache: 'no-store',
