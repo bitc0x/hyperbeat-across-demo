@@ -290,7 +290,7 @@ function DepositDemo() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <InfoBox>
         <strong style={{ color: HB_TEXT }}>One address, every chain.</strong>{" "}
-        Instead of telling users which network to use, Hyperbeat gives each user one address that accepts USDC from any chain. Across routes it 1:1, no slippage, into USDH in Hypercore. No wrong-network warning. No bounce.
+        Instead of telling users which network to use, Hyperbeat gives each user one address that accepts USDC from any chain. Across routes it 1:1, no slippage, zero fees, into USDH in Hypercore. No wrong-network warning. No bounce.
       </InfoBox>
 
       {/* Flow header */}
@@ -786,7 +786,7 @@ export default function Home() {
               <span style={{ color: HB_GREEN }}>One address. Any chain. Into Hypercore.</span>
             </h1>
             <p style={{ fontSize: 15, color: HB_MUTED, lineHeight: 1.7, maxWidth: 580 }}>
-              Today users see a warning telling them which chain to use, and some leave. Across generates one deposit address per user that accepts USDC from any chain and delivers it 1:1, no slippage, as USDH directly into Hypercore. No wrong-network warnings. No wallet connection required. No drop-off.
+              Today users see a warning telling them which chain to use, and some leave. Across generates one deposit address per user that accepts USDC from any chain and delivers it 1:1, no slippage, zero fees, as USDH directly into Hypercore. No wrong-network warnings. No wallet connection required. No drop-off.
             </p>
           </div>
 
