@@ -54,11 +54,14 @@ function AcrossLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-function HyperbeatWordmark({ height = 28 }: { height?: number }) {
+function HyperbeatWordmark({ height = 32 }: { height?: number }) {
+  // SVG viewBox is square (1068x1068) — must set explicit width for the full horizontal wordmark
+  const width = Math.round(height * 3.5);
   return (
     <img
       src="/hyperbeat-logo.svg"
       alt="Hyperbeat"
+      width={width}
       height={height}
       style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}
     />
