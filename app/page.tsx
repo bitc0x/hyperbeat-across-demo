@@ -284,6 +284,7 @@ function DepositDemo() {
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [fillAmt, setFillAmt] = useState("");
+  const [fillTxHash, setFillTxHash] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Clear interval on unmount (e.g. tab switch while polling)
@@ -291,13 +292,13 @@ function DepositDemo() {
 
   const reset = useCallback(() => {
     setStep("idle"); setDepositAddr(""); setOutputAmt(""); setCopied(false);
-    setErrorMsg(""); setFillAmt("");
+    setErrorMsg(""); setFillAmt(""); setFillTxHash("");
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   }, []);
 
   const generate = useCallback(async () => {
     if (!recipient || recipient.trim().length < 10) {
-      setErrorMsg("Enter a valid Hyperliquid address.");
+      setErrorMsg("Enter a valid Hypercore address.");
       return;
     }
     const parsedAmt = parseFloat(amount);
@@ -338,7 +339,13 @@ function DepositDemo() {
         const current = await getOutputBalance(recipient.trim());
         if (current > baseline) {
           clearInterval(interval); pollRef.current = null;
-          setFillAmt((current - baseline).toFixed(6).replace(/\.?0+$/, "")); setStep("filled");
+          setFillAmt((current - baseline).toFixed(6).replace(/\.?0+$/, ""));
+          try {
+            const sr = await fetch(`/api/deposit-status?depositAddress=${depositAddr}&index=0`);
+            const sd = await sr.json();
+            if (sd.fillTx) setFillTxHash(sd.fillTx);
+          } catch { /* link will fallback */ }
+          setStep("filled");
         }
       } catch { /* keep polling */ }
     }, 200);
@@ -357,7 +364,7 @@ function DepositDemo() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <InfoBox>
         <strong style={{ color: HB_TEXT }}>One address, every chain.</strong>{" "}
-        Instead of telling users which network to use, Hyperbeat gives each user one address that accepts USDC from any chain. Across routes it 1:1, no slippage, zero fees, as USDH on Hyperliquid. No wrong-network warning. No bounce.
+        Instead of telling users which network to use, Hyperbeat gives each user one address that accepts USDC from any chain. Across routes it 1:1, no slippage, zero fees, as USDH on Hypercore. No wrong-network warning. No bounce.
       </InfoBox>
 
       {/* Flow header */}
@@ -381,7 +388,7 @@ function DepositDemo() {
           <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <img src={HYPEREVM_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
-            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hyperliquid</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hypercore</div>
           </div>
         </div>
       </div>
@@ -399,8 +406,8 @@ function DepositDemo() {
       </div>
 
       <div>
-        <FL>Hyperliquid recipient address</FL>
-        <DInput value={recipient} onChange={v => { setRecipient(v); reset(); }} mono placeholder="0x... your Hyperliquid wallet address" />
+        <FL>Hypercore recipient address</FL>
+        <DInput value={recipient} onChange={v => { setRecipient(v); reset(); }} mono placeholder="0x... your Hypercore wallet address" />
       </div>
 
       {step === "idle" && <PBtn onClick={generate} full>Generate deposit address</PBtn>}
@@ -452,7 +459,7 @@ function DepositDemo() {
               {depositAddr}
             </div>
             <div style={{ fontSize: 12, color: HB_MUTED, marginTop: 8 }}>
-              Send USDC here from any wallet or exchange on {selectedChain.label}. Across detects the deposit and delivers USDC to your Hyperliquid address in approximately 2 seconds.
+              Send USDC here from any wallet or exchange on {selectedChain.label}. Across detects the deposit and delivers USDH to your Hypercore address in approximately 2 seconds.
             </div>
           </div>
 
@@ -481,19 +488,21 @@ function DepositDemo() {
                   <div style={{ fontWeight: 700, fontSize: 13, color: HB_GREEN }}>Settlement complete</div>
                   <div style={{ fontSize: 12, color: HB_MUTED, marginTop: 2 }}>
                     +{formatAmt(fillAmt)} USDH arrived at{" "}
-                    <span style={{ fontFamily: "monospace" }}>{shortAddr(recipient)}</span> on Hyperliquid. 1:1, $0 fee.
+                    <span style={{ fontFamily: "monospace" }}>{shortAddr(recipient)}</span> on Hypercore. 1:1, $0 fee.
                   </div>
                 </div>
               </div>
               <a
-                href={`https://app.across.to/transactions?search=${depositAddr}`}
+                href={fillTxHash ? `https://app.across.to/transfer/${fillTxHash}` : `https://app.across.to/transactions?search=${depositAddr}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 6,
-                  fontSize: 12, color: HB_GREEN, fontWeight: 600, textDecoration: "none",
-                  background: HB_GREEN + "0A", border: `1px solid ${HB_GREEN}25`,
-                  borderRadius: 7, padding: "7px 14px",
+                  fontSize: 12, color: "#0C0C0C", fontWeight: 600, textDecoration: "none",
+                  background: HB_GREEN, border: "none",
+                  borderRadius: 7, padding: "7px 16px",
+                  boxShadow: `0 2px 8px ${HB_GREEN}40`,
+                  width: "fit-content",
                 }}
               >
                 View on Across
@@ -527,6 +536,7 @@ function WalletDemo() {
   const [quote, setQuote] = useState<{ calldata: string; to: string; value: string } | null>(null);
   const [txHash, setTxHash] = useState("");
   const [fillAmt, setFillAmt] = useState("");
+  const [fillTxHash, setFillTxHash] = useState("");
   const [baseline, setBaseline] = useState(0);
   const [errorMsg, setErrMsg] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -535,13 +545,13 @@ function WalletDemo() {
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   const reset = useCallback(() => {
-    setStep("idle"); setQuote(null); setTxHash(""); setFillAmt(""); setErrMsg("");
+    setStep("idle"); setQuote(null); setTxHash(""); setFillAmt(""); setFillTxHash(""); setErrMsg("");
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   }, []);
 
   const connectAndQuote = useCallback(async () => {
     if (!isConnected) { openConnectModal?.(); return; }
-    if (!recipient || recipient.trim().length < 10) { setErrMsg("Enter a valid Hyperliquid recipient address."); return; }
+    if (!recipient || recipient.trim().length < 10) { setErrMsg("Enter a valid Hypercore recipient address."); return; }
     const parsedAmt = parseFloat(amount);
     if (!amount || isNaN(parsedAmt) || parsedAmt <= 0) { setErrMsg("Enter a valid amount greater than 0."); return; }
     setStep("quoting"); setErrMsg("");
@@ -589,7 +599,13 @@ function WalletDemo() {
           const current = await getOutputBalance(recipient.trim());
           if (current > baseline) {
             clearInterval(interval); pollRef.current = null;
-            setFillAmt((current - baseline).toFixed(6).replace(/\.?0+$/, "")); setStep("done");
+            setFillAmt((current - baseline).toFixed(6).replace(/\.?0+$/, ""));
+            try {
+              const sr = await fetch(`/api/deposit-status?depositTxHash=${hash}&originChainId=${chainId}`);
+              const sd = await sr.json();
+              if (sd.fillTx) setFillTxHash(sd.fillTx);
+            } catch { /* link will fallback */ }
+            setStep("done");
           }
         } catch { /* keep polling */ }
       }, 200);
@@ -632,7 +648,7 @@ function WalletDemo() {
           <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <img src={HYPEREVM_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
-            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hyperliquid</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hypercore</div>
           </div>
         </div>
       </div>
@@ -649,8 +665,8 @@ function WalletDemo() {
       </div>
 
       <div>
-        <FL>Hyperliquid recipient address</FL>
-        <DInput value={recipient} onChange={v => { setRecip(v); reset(); }} mono placeholder="0x... Hyperliquid wallet address" />
+        <FL>Hypercore recipient address</FL>
+        <DInput value={recipient} onChange={v => { setRecip(v); reset(); }} mono placeholder="0x... Hypercore wallet address" />
       </div>
 
       {errorMsg && (
@@ -693,8 +709,8 @@ function WalletDemo() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {([
                 { key: "signing" as WalletStep, label: "Wallet signature confirmed" },
-                { key: "bridging" as WalletStep, label: "Relayer filling, delivering USDC to Hyperliquid..." },
-                { key: "done" as WalletStep, label: `+${formatAmt(fillAmt)} USDH delivered on Hyperliquid` },
+                { key: "bridging" as WalletStep, label: "Relayer filling, delivering USDC to Hypercore..." },
+                { key: "done" as WalletStep, label: `+${formatAmt(fillAmt)} USDH delivered on Hypercore` },
               ]).map(({ key, label }) => {
                 const ci = order.indexOf(step), mi = order.indexOf(key);
                 const isDone = ci > mi || (step === "done" && key === "done");
@@ -716,7 +732,7 @@ function WalletDemo() {
                   <div style={{ fontWeight: 700, fontSize: 13, color: HB_GREEN }}>Settlement complete</div>
                   <div style={{ fontSize: 12, color: HB_MUTED, marginTop: 2 }}>
                     +{formatAmt(fillAmt)} USDH delivered to{" "}
-                    {recipient ? shortAddr(recipient) : "recipient"} on Hyperliquid. 1:1, $0 fee.
+                    {recipient ? shortAddr(recipient) : "recipient"} on Hypercore. 1:1, $0 fee.
                   </div>
                 </div>
               </div>
@@ -726,14 +742,16 @@ function WalletDemo() {
                 </div>
               )}
               <a
-                href={`https://app.across.to/transactions?search=${txHash}`}
+                href={fillTxHash ? `https://app.across.to/transfer/${fillTxHash}` : `https://app.across.to/transactions?search=${txHash}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 6,
-                  fontSize: 12, color: HB_GREEN, fontWeight: 600, textDecoration: "none",
-                  background: HB_GREEN + "0A", border: `1px solid ${HB_GREEN}25`,
-                  borderRadius: 7, padding: "7px 14px",
+                  fontSize: 12, color: "#0C0C0C", fontWeight: 600, textDecoration: "none",
+                  background: HB_GREEN, border: "none",
+                  borderRadius: 7, padding: "7px 16px",
+                  boxShadow: `0 2px 8px ${HB_GREEN}40`,
+                  width: "fit-content",
                 }}
               >
                 View on Across
@@ -819,7 +837,7 @@ export default function Home() {
               margin: "0 0 10px", lineHeight: 1.1,
             }}>
               No more "wrong network" drop-off.<br />
-              <span style={{ color: HB_GREEN }}>One address. Any chain. Into Hyperliquid.</span>
+              <span style={{ color: HB_GREEN }}>One address. Any chain. Into Hypercore.</span>
             </h1>
             <p style={{ fontSize: 15, color: HB_MUTED, lineHeight: 1.7, maxWidth: 580 }}>
               Today users see a warning telling them which chain to use, and some leave. Across generates one deposit address per user that accepts USDC from any chain and delivers it 1:1, no slippage, zero fees, as USDH directly on HyperEVM. No wrong-network warnings. No wallet connection required. No drop-off.
