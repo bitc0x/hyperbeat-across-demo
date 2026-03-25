@@ -24,7 +24,7 @@ const USDC_BY_CHAIN: Record<string, string> = {
   "1":     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
   "8453":  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
 };
-const USDH_ADDRESS = "0x2000000000000000000000000000000000000168";
+const USDH_ADDRESS = "0x111111a1a0667d36bd57c0a9f569b98057111111"; // USDH ERC-20 on HyperEVM
 const HL_CHAIN_ID  = "1337";
 const HYPER_EVM_RPC = "https://rpc.hyperliquid.xyz/evm";
 
