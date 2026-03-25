@@ -42,7 +42,17 @@ function formatAmt(n: string) {
   return parseFloat(str).toLocaleString("en-US", { maximumFractionDigits: 6 });
 }
 
-function AcrossLogo({ size = 20 }: { size?: number }) {
+const LOGO_SIZE = 28;
+const BRAND_FONT: React.CSSProperties = {
+  fontFamily: "-apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif",
+  fontWeight: 700,
+  fontSize: 16,
+  color: "#F0F0F0",
+  letterSpacing: "-0.02em",
+  lineHeight: 1,
+};
+
+function AcrossLogo({ size = LOGO_SIZE }: { size?: number }) {
   return (
     <img
       src="/across-logo.png"
@@ -54,15 +64,13 @@ function AcrossLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-function HyperbeatWordmark({ height = 32 }: { height?: number }) {
-  // SVG viewBox is square (1068x1068) — must set explicit width for the full horizontal wordmark
-  const width = Math.round(height * 3.5);
+function HyperbeatIcon({ size = LOGO_SIZE }: { size?: number }) {
   return (
     <img
-      src="/hyperbeat-logo.svg"
-      alt="Hyperbeat"
-      width={width}
-      height={height}
+      src="/hyperbeat-icon.png"
+      alt="Hyperbeat icon"
+      width={size}
+      height={size}
       style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}
     />
   );
@@ -442,7 +450,7 @@ function DepositDemo() {
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: HB_MUTED }}>
         <div style={{ width: 6, height: 6, borderRadius: "50%", background: A_ORANGE, animation: "pulse 1.5s infinite" }} />
-        Powered by <AcrossLogo size={15} />
+        Powered by <AcrossLogo size={16} />
         <span style={{ color: HB_TEXT, fontWeight: 600 }}>Across Protocol</span>
       </div>
     </div>
@@ -702,7 +710,7 @@ function WalletDemo() {
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: HB_MUTED }}>
         <div style={{ width: 6, height: 6, borderRadius: "50%", background: A_ORANGE, animation: "pulse 1.5s infinite" }} />
-        Powered by <AcrossLogo size={15} />
+        Powered by <AcrossLogo size={16} />
         <span style={{ color: HB_TEXT, fontWeight: 600 }}>Across Protocol</span>
       </div>
     </div>
@@ -742,13 +750,12 @@ export default function Home() {
           background: HB_CARD, borderBottom: `1px solid ${HB_BORDER}`,
           position: "sticky", top: 0, zIndex: 10,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <HyperbeatWordmark height={26} />
-            <span style={{ color: HB_MUTED2, fontSize: 16, fontWeight: 300, margin: "0 2px" }}>x</span>
-            <AcrossLogo size={26} />
-            <span style={{ fontFamily: "-apple-system,sans-serif", fontWeight: 700, fontSize: 15, color: A_ORANGE, letterSpacing: "-0.03em" }}>
-              Across
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={BRAND_FONT}>Hyperbeat</span>
+            <HyperbeatIcon size={LOGO_SIZE} />
+            <span style={{ color: HB_MUTED2, fontSize: 15, fontWeight: 300, margin: "0 2px" }}>x</span>
+            <AcrossLogo size={LOGO_SIZE} />
+            <span style={BRAND_FONT}>Across</span>
           </div>
           <div style={{
             fontSize: 10, color: HB_MUTED, letterSpacing: "0.1em", textTransform: "uppercase",
