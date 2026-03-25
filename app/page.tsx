@@ -24,17 +24,26 @@ const USDC_BY_CHAIN: Record<string, string> = {
   "1":     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
   "8453":  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
 };
-const USDH_API_TOKEN  = "0x2000000000000000000000000000000000000168"; // USDH as Across API knows it (outputToken param)
-const HL_CHAIN_ID  = "1337";
+const OUTPUT_TOKEN    = "0xb88339CB7199b77E23DB6E890353E22632Ba630f"; // USDC on HyperEVM (chain 999)
+const HL_CHAIN_ID  = "999"; // HyperEVM
 
-// Poll Across deposit status API — chain-agnostic, works regardless of where USDH lands
-async function getDepositStatus(opts: { depositAddress: string } | { depositTxHash: string; originChainId: string }): Promise<string> {
-  const qs = "depositAddress" in opts
-    ? `depositAddress=${opts.depositAddress}&index=0`
-    : `depositTxHash=${opts.depositTxHash}&originChainId=${opts.originChainId}`;
-  const res = await fetch(`/api/deposit-status?${qs}`);
+const HYPER_EVM_RPC = "https://rpc.hyperliquid.xyz/evm";
+
+// balanceOf(address) for USDC on HyperEVM via eth_call
+async function getOutputBalance(address: string): Promise<number> {
+  const padded = address.replace("0x", "").toLowerCase().padStart(64, "0");
+  const data = "0x70a08231" + padded;
+  const res = await fetch(HYPER_EVM_RPC, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0", id: 1, method: "eth_call",
+      params: [{ to: OUTPUT_TOKEN, data }, "latest"],
+    }),
+  });
   const json = await res.json();
-  return json.status ?? "pending";
+  if (!json.result || json.result === "0x") return 0;
+  return parseInt(json.result, 16) / 1_000_000; // USDC has 6 decimals
 }
 
 const SOURCE_CHAINS = [
@@ -309,7 +318,7 @@ function DepositDemo() {
       const params = new URLSearchParams({
         inputToken: USDC_BY_CHAIN[chainId],
         originChainId: chainId,
-        outputToken: USDH_API_TOKEN,
+        outputToken: OUTPUT_TOKEN,
         destinationChainId: HL_CHAIN_ID,
         recipient: recipient.trim(),
         refundAddress: recipient.trim(),
@@ -329,17 +338,19 @@ function DepositDemo() {
 
   const startPolling = useCallback(async () => {
     setStep("polling");
+    let baseline = 0;
+    try { baseline = await getOutputBalance(recipient.trim()); } catch { /* start from 0 */ }
     const interval = setInterval(async () => {
       try {
-        const status = await getDepositStatus({ depositAddress: depositAddr });
-        if (status === "filled") {
+        const current = await getOutputBalance(recipient.trim());
+        if (current > baseline) {
           clearInterval(interval); pollRef.current = null;
-          setFillAmt(outputAmt); setStep("filled");
+          setFillAmt((current - baseline).toFixed(6).replace(/\.?0+$/, "")); setStep("filled");
         }
       } catch { /* keep polling */ }
     }, 200);
     pollRef.current = interval;
-  }, [depositAddr, outputAmt]);
+  }, [recipient]);
 
   const copy = useCallback(() => {
     navigator.clipboard.writeText(depositAddr).catch(() => {});
@@ -353,7 +364,7 @@ function DepositDemo() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <InfoBox>
         <strong style={{ color: HB_TEXT }}>One address, every chain.</strong>{" "}
-        Instead of telling users which network to use, Hyperbeat gives each user one address that accepts USDC from any chain. Across routes it 1:1, no slippage, zero fees, into USDH in Hyperliquid. No wrong-network warning. No bounce.
+        Instead of telling users which network to use, Hyperbeat gives each user one address that accepts USDC from any chain. Across routes it 1:1, no slippage, zero fees, as USDC on HyperEVM. No wrong-network warning. No bounce.
       </InfoBox>
 
       {/* Flow header */}
@@ -377,7 +388,7 @@ function DepositDemo() {
           <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <img src={HYPEREVM_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
-            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hyperliquid</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDC on HyperEVM</div>
           </div>
         </div>
       </div>
@@ -423,7 +434,7 @@ function DepositDemo() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
             <StatBox label="You send" value={`${amount} USDC`} />
             <StatBox label="Bridge fee" value="$0.00" />
-            <StatBox label="Recipient receives" value={`${outputAmt} USDH`} />
+            <StatBox label="Recipient receives" value={`${outputAmt} USDC`} />
           </div>
 
           <div style={{ background: HB_CARD2, border: `1px solid ${HB_BORDER}`, borderRadius: 8, padding: "13px 15px" }}>
@@ -448,21 +459,21 @@ function DepositDemo() {
               {depositAddr}
             </div>
             <div style={{ fontSize: 12, color: HB_MUTED, marginTop: 8 }}>
-              Send USDC here from any wallet or exchange on {selectedChain.label}. Across detects the deposit and delivers USDH to your Hyperliquid address in approximately 2 seconds.
+              Send USDC here from any wallet or exchange on {selectedChain.label}. Across detects the deposit and delivers USDC to your Hyperliquid address in approximately 2 seconds.
             </div>
           </div>
 
           <ProgBar pct={pct} />
 
           {step === "waiting" && (
-            <PBtn onClick={startPolling} full>I&apos;ve sent USDC, track my USDH balance</PBtn>
+            <PBtn onClick={startPolling} full>I&apos;ve sent USDC, track my USDC balance</PBtn>
           )}
 
           {step === "polling" && (
             <div style={{ background: HB_GREEN + "0A", border: `1px solid ${HB_GREEN}22`, borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: HB_GREEN, animation: "pulse 1.5s infinite", flexShrink: 0 }} />
               <div style={{ fontSize: 13, color: HB_TEXT }}>
-                Watching USDH balance for{" "}
+                Watching USDC balance for{" "}
                 <span style={{ fontFamily: "monospace", fontSize: 11, color: HB_MUTED }}>{shortAddr(recipient)}</span>
                 <span style={{ color: HB_MUTED }}> checking every 200ms</span>
               </div>
@@ -476,7 +487,7 @@ function DepositDemo() {
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: HB_GREEN }}>Settlement complete</div>
                   <div style={{ fontSize: 12, color: HB_MUTED, marginTop: 2 }}>
-                    +{formatAmt(fillAmt)} USDH arrived at{" "}
+                    +{formatAmt(fillAmt)} USDC arrived at{" "}
                     <span style={{ fontFamily: "monospace" }}>{shortAddr(recipient)}</span> on Hyperliquid. 1:1, $0 fee.
                   </div>
                 </div>
@@ -523,6 +534,7 @@ function WalletDemo() {
   const [quote, setQuote] = useState<{ calldata: string; to: string; value: string } | null>(null);
   const [txHash, setTxHash] = useState("");
   const [fillAmt, setFillAmt] = useState("");
+  const [baseline, setBaseline] = useState(0);
   const [errorMsg, setErrMsg] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -545,7 +557,7 @@ function WalletDemo() {
       const params = new URLSearchParams({
         inputToken: USDC_BY_CHAIN[chainId],
         originChainId: chainId,
-        outputToken: USDH_API_TOKEN,
+        outputToken: OUTPUT_TOKEN,
         destinationChainId: HL_CHAIN_ID,
         recipient: recipient.trim(),
         amount: amountInUnits,
@@ -559,7 +571,7 @@ function WalletDemo() {
         to: data.to ?? data.swapTx?.to ?? "",
         value: data.value ?? data.swapTx?.value ?? "0",
       });
-      // baseline no longer needed — polling via deposit status API
+      try { setBaseline(await getOutputBalance(recipient.trim())); } catch { setBaseline(0); }
     } catch (err: unknown) {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setStep("idle");
@@ -581,10 +593,10 @@ function WalletDemo() {
       setTxHash(hash);
       const interval = setInterval(async () => {
         try {
-          const status = await getDepositStatus({ depositTxHash: hash, originChainId: chainId });
-          if (status === "filled") {
+          const current = await getOutputBalance(recipient.trim());
+          if (current > baseline) {
             clearInterval(interval); pollRef.current = null;
-            setFillAmt(amount); setStep("done");
+            setFillAmt((current - baseline).toFixed(6).replace(/\.?0+$/, "")); setStep("done");
           }
         } catch { /* keep polling */ }
       }, 200);
@@ -627,7 +639,7 @@ function WalletDemo() {
           <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <img src={HYPEREVM_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
-            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hyperliquid</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDC on HyperEVM</div>
           </div>
         </div>
       </div>
@@ -678,7 +690,7 @@ function WalletDemo() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
             <StatBox label="You send" value={`${amount} USDC`} />
             <StatBox label="Bridge fee" value="$0.00" />
-            <StatBox label="Recipient receives" value={`${amount} USDH`} />
+            <StatBox label="Recipient receives" value={`${amount} USDC`} />
           </div>
 
           {step === "quoting" && <PBtn onClick={sign} full>Sign and bridge</PBtn>}
@@ -688,8 +700,8 @@ function WalletDemo() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {([
                 { key: "signing" as WalletStep, label: "Wallet signature confirmed" },
-                { key: "bridging" as WalletStep, label: "Relayer filling, delivering USDH to Hyperliquid..." },
-                { key: "done" as WalletStep, label: `+${formatAmt(fillAmt)} USDH delivered on Hyperliquid` },
+                { key: "bridging" as WalletStep, label: "Relayer filling, delivering USDC to Hyperliquid..." },
+                { key: "done" as WalletStep, label: `+${formatAmt(fillAmt)} USDC delivered on Hyperliquid` },
               ]).map(({ key, label }) => {
                 const ci = order.indexOf(step), mi = order.indexOf(key);
                 const isDone = ci > mi || (step === "done" && key === "done");
@@ -710,7 +722,7 @@ function WalletDemo() {
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: HB_GREEN }}>Settlement complete</div>
                   <div style={{ fontSize: 12, color: HB_MUTED, marginTop: 2 }}>
-                    +{formatAmt(fillAmt)} USDH delivered to{" "}
+                    +{formatAmt(fillAmt)} USDC delivered to{" "}
                     {recipient ? shortAddr(recipient) : "recipient"} on Hyperliquid. 1:1, $0 fee.
                   </div>
                 </div>
@@ -817,7 +829,7 @@ export default function Home() {
               <span style={{ color: HB_GREEN }}>One address. Any chain. Into Hyperliquid.</span>
             </h1>
             <p style={{ fontSize: 15, color: HB_MUTED, lineHeight: 1.7, maxWidth: 580 }}>
-              Today users see a warning telling them which chain to use, and some leave. Across generates one deposit address per user that accepts USDC from any chain and delivers it 1:1, no slippage, zero fees, as USDH directly into Hyperliquid. No wrong-network warnings. No wallet connection required. No drop-off.
+              Today users see a warning telling them which chain to use, and some leave. Across generates one deposit address per user that accepts USDC from any chain and delivers it 1:1, no slippage, zero fees, as USDC directly on HyperEVM. No wrong-network warnings. No wallet connection required. No drop-off.
             </p>
           </div>
 
