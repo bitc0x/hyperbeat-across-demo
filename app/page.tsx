@@ -47,10 +47,11 @@ async function getUsdhBalance(address: string): Promise<number> {
 }
 
 const SOURCE_CHAINS = [
-  { label: "Arbitrum", id: "42161" },
-  { label: "Ethereum", id: "1" },
-  { label: "Base",     id: "8453" },
+  { label: "Arbitrum", id: "42161", logo: "https://alexandria-blond.vercel.app/assets/chains/arbitrum.svg" },
+  { label: "Ethereum", id: "1",     logo: "https://alexandria-blond.vercel.app/assets/chains/mainnet.svg" },
+  { label: "Base",     id: "8453",  logo: "https://alexandria-blond.vercel.app/assets/chains/base.svg" },
 ];
+const HYPEREVM_LOGO = "https://alexandria-blond.vercel.app/assets/chains/hyperevm.svg";
 
 function shortAddr(a: string) { return a.slice(0, 10) + "..." + a.slice(-8); }
 function formatAmt(n: string) {
@@ -216,6 +217,58 @@ function StatBox({ label, value }: { label: string; value: string }) {
   );
 }
 
+// ---- Chain Select ----
+function ChainSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const selected = SOURCE_CHAINS.find(c => c.id === value)!;
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%", background: HB_CARD2, border: `1px solid ${open ? HB_GREEN + "80" : HB_BORDER}`,
+          borderRadius: 8, color: HB_TEXT, fontSize: 13, padding: "9px 12px",
+          cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+          boxShadow: open ? `0 0 0 3px ${HB_GREEN}14` : "none",
+          transition: "border-color 0.15s, box-shadow 0.15s",
+        }}
+      >
+        <img src={selected.logo} alt={selected.label} width={18} height={18} style={{ borderRadius: 4, flexShrink: 0 }} />
+        <span style={{ flex: 1, textAlign: "left" }}>{selected.label}</span>
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+          <path d="M1 1l4 4 4-4" stroke="#888888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 20,
+          background: HB_CARD2, border: `1px solid ${HB_BORDER}`, borderRadius: 8,
+          overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+        }}>
+          {SOURCE_CHAINS.map(c => (
+            <button
+              key={c.id}
+              onClick={() => { onChange(c.id); setOpen(false); }}
+              style={{
+                width: "100%", background: c.id === value ? HB_GREEN + "12" : "none",
+                border: "none", color: c.id === value ? HB_TEXT : HB_MUTED,
+                padding: "9px 12px", fontSize: 13, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 8,
+                transition: "background 0.1s",
+              }}
+              onMouseEnter={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = HB_CARD; }}
+              onMouseLeave={e => { if (c.id !== value) (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+            >
+              <img src={c.logo} alt={c.label} width={18} height={18} style={{ borderRadius: 4, flexShrink: 0 }} />
+              <span>{c.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---- Deposit Address Tab ----
 function DepositDemo() {
   const [step, setStep] = useState<DepositStep>("idle");
@@ -321,9 +374,12 @@ function DepositDemo() {
             </div>
           </div>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED, marginBottom: 3 }}>TO</div>
-          <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hyperliquid</div>
+        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <img src={HYPEREVM_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
+            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hyperliquid</div>
+          </div>
         </div>
       </div>
 
@@ -331,20 +387,7 @@ function DepositDemo() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <FL>Source chain</FL>
-          <select
-            value={chainId}
-            onChange={e => { setChainId(e.target.value); reset(); }}
-            style={{
-              width: "100%", background: HB_CARD2, border: `1px solid ${HB_BORDER}`,
-              borderRadius: 8, color: HB_TEXT, fontSize: 13,
-              padding: "9px 28px 9px 12px", outline: "none", cursor: "pointer",
-              appearance: "none",
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-              backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center",
-            }}
-          >
-            {SOURCE_CHAINS.map(c => <option key={c.id} value={c.id} style={{ background: HB_CARD }}>{c.label}</option>)}
-          </select>
+          <ChainSelect value={chainId} onChange={v => { setChainId(v); reset(); }} />
         </div>
         <div>
           <FL>Amount (USDC)</FL>
@@ -583,29 +626,19 @@ function WalletDemo() {
             </div>
           </div>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED, marginBottom: 3 }}>TO</div>
-          <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hyperliquid</div>
+        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <img src={HYPEREVM_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
+            <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hyperliquid</div>
+          </div>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <div>
           <FL>Source chain</FL>
-          <select
-            value={chainId}
-            onChange={e => { setChainId(e.target.value); reset(); }}
-            style={{
-              width: "100%", background: HB_CARD2, border: `1px solid ${HB_BORDER}`,
-              borderRadius: 8, color: HB_TEXT, fontSize: 13,
-              padding: "9px 28px 9px 12px", outline: "none", cursor: "pointer",
-              appearance: "none",
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-              backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center",
-            }}
-          >
-            {SOURCE_CHAINS.map(c => <option key={c.id} value={c.id} style={{ background: HB_CARD }}>{c.label}</option>)}
-          </select>
+          <ChainSelect value={chainId} onChange={v => { setChainId(v); reset(); }} />
         </div>
         <div>
           <FL>Amount (USDC)</FL>
