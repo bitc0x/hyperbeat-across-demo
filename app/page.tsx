@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAccount, useSendTransaction, useSwitchChain } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 
@@ -227,21 +227,29 @@ function DepositDemo() {
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [fillAmt, setFillAmt] = useState("");
-  const pollRef = useState<ReturnType<typeof setInterval> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Clear interval on unmount (e.g. tab switch while polling)
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   const reset = useCallback(() => {
     setStep("idle"); setDepositAddr(""); setOutputAmt(""); setCopied(false);
     setErrorMsg(""); setFillAmt("");
-    if (pollRef[0]) { clearInterval(pollRef[0]); (pollRef as unknown as { 0: null })[0] = null; }
-  }, [pollRef]);
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  }, []);
 
   const generate = useCallback(async () => {
     if (!recipient || recipient.trim().length < 10) {
       setErrorMsg("Enter a valid Hyperliquid address.");
       return;
     }
+    const parsedAmt = parseFloat(amount);
+    if (!amount || isNaN(parsedAmt) || parsedAmt <= 0) {
+      setErrorMsg("Enter a valid amount greater than 0.");
+      return;
+    }
     setStep("loading"); setErrorMsg("");
-    const amountInUnits = Math.floor(parseFloat(amount) * 1_000_000).toString();
+    const amountInUnits = Math.floor(parsedAmt * 1_000_000).toString();
     try {
       const params = new URLSearchParams({
         inputToken: USDC_BY_CHAIN[chainId],
@@ -273,13 +281,13 @@ function DepositDemo() {
       try {
         const current = await getUsdhBalance(recipient.trim());
         if (current > baseline) {
-          clearInterval(interval); (pollRef as unknown as { 0: null })[0] = null;
+          clearInterval(interval); pollRef.current = null;
           setFillAmt((current - baseline).toFixed(4)); setStep("filled");
         }
       } catch { /* keep polling */ }
     }, 200);
-    (pollRef as unknown as { 0: ReturnType<typeof setInterval> })[0] = interval;
-  }, [recipient, pollRef]);
+    pollRef.current = interval;
+  }, [recipient]);
 
   const copy = useCallback(() => {
     navigator.clipboard.writeText(depositAddr).catch(() => {});
@@ -475,19 +483,24 @@ function WalletDemo() {
   const [fillAmt, setFillAmt] = useState("");
   const [baseline, setBaseline] = useState(0);
   const [errorMsg, setErrMsg] = useState("");
-  const pollRef = useState<ReturnType<typeof setInterval> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Clear interval on unmount
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   const reset = useCallback(() => {
     setStep("idle"); setQuote(null); setTxHash(""); setFillAmt(""); setErrMsg("");
-    if (pollRef[0]) { clearInterval(pollRef[0]); (pollRef as unknown as { 0: null })[0] = null; }
-  }, [pollRef]);
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  }, []);
 
   const connectAndQuote = useCallback(async () => {
     if (!isConnected) { openConnectModal?.(); return; }
     if (!recipient || recipient.trim().length < 10) { setErrMsg("Enter a valid Hyperliquid recipient address."); return; }
+    const parsedAmt = parseFloat(amount);
+    if (!amount || isNaN(parsedAmt) || parsedAmt <= 0) { setErrMsg("Enter a valid amount greater than 0."); return; }
     setStep("quoting"); setErrMsg("");
     try {
-      const amountInUnits = Math.floor(parseFloat(amount) * 1_000_000).toString();
+      const amountInUnits = Math.floor(parsedAmt * 1_000_000).toString();
       const params = new URLSearchParams({
         inputToken: USDC_BY_CHAIN[chainId],
         originChainId: chainId,
@@ -511,7 +524,7 @@ function WalletDemo() {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setStep("idle");
     }
-  }, [isConnected, openConnectModal, address, recipient, amount, chainId]);
+  }, [isConnected, openConnectModal, recipient, amount, chainId]);
 
   const sign = useCallback(async () => {
     if (!quote) return;
@@ -530,12 +543,12 @@ function WalletDemo() {
         try {
           const current = await getUsdhBalance(recipient.trim());
           if (current > baseline) {
-            clearInterval(interval); (pollRef as unknown as { 0: null })[0] = null;
+            clearInterval(interval); pollRef.current = null;
             setFillAmt((current - baseline).toFixed(4)); setStep("done");
           }
         } catch { /* keep polling */ }
       }, 200);
-      (pollRef as unknown as { 0: ReturnType<typeof setInterval> })[0] = interval;
+      pollRef.current = interval;
     } catch (err: unknown) {
       setErrMsg(err instanceof Error ? err.message : String(err));
       setStep("quoting");
@@ -819,7 +832,6 @@ export default function Home() {
           }}>
             {mode === "deposit" ? <DepositDemo /> : <WalletDemo />}
           </div>
-
 
         </main>
       </div>
