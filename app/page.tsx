@@ -44,7 +44,7 @@ const SOURCE_CHAINS = [
   { label: "Ethereum", id: "1",     logo: "https://alexandria-blond.vercel.app/assets/chains/mainnet.svg" },
   { label: "Base",     id: "8453",  logo: "https://alexandria-blond.vercel.app/assets/chains/base.svg" },
 ];
-const HYPEREVM_LOGO = "https://alexandria-blond.vercel.app/assets/chains/hyperevm.svg";
+const HYPERCORE_LOGO = "https://alexandria-blond.vercel.app/assets/chains/hypercore.svg";
 
 function shortAddr(a: string) { return a.slice(0, 10) + "..." + a.slice(-8); }
 function formatAmt(n: string) {
@@ -387,7 +387,7 @@ function DepositDemo() {
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <img src={HYPEREVM_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
+            <img src={HYPERCORE_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
             <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hypercore</div>
           </div>
         </div>
@@ -647,7 +647,7 @@ function WalletDemo() {
         <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: HB_MUTED }}>TO</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <img src={HYPEREVM_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
+            <img src={HYPERCORE_LOGO} alt="HyperEVM" width={16} height={16} style={{ borderRadius: 3 }} />
             <div style={{ fontWeight: 700, fontSize: 13, color: HB_TEXT }}>USDH on Hypercore</div>
           </div>
         </div>
