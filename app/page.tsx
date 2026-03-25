@@ -486,7 +486,7 @@ function DepositDemo() {
                 </div>
               </div>
               <a
-                href={`https://app.hyperliquid.xyz/portfolio`}
+                href="https://app.across.to/transfers?status=all&page=0"
                 target="_blank"
                 rel="noreferrer"
                 style={{
@@ -496,7 +496,7 @@ function DepositDemo() {
                   borderRadius: 7, padding: "7px 14px",
                 }}
               >
-                View on Hyperliquid
+                View on Across
               </a>
               <GBtn onClick={reset}>Reset demo</GBtn>
             </>
@@ -726,7 +726,7 @@ function WalletDemo() {
                 </div>
               )}
               <a
-                href={`https://app.hyperliquid.xyz/portfolio`}
+                href="https://app.across.to/transfers?status=all&page=0"
                 target="_blank"
                 rel="noreferrer"
                 style={{
@@ -736,7 +736,7 @@ function WalletDemo() {
                   borderRadius: 7, padding: "7px 14px",
                 }}
               >
-                View on Hyperliquid
+                View on Across
               </a>
               <GBtn onClick={reset}>Reset</GBtn>
             </>
