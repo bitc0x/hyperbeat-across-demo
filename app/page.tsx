@@ -295,8 +295,8 @@ function DepositDemo() {
   }, []);
 
   const generate = useCallback(async () => {
-    if (!recipient || recipient.trim().length < 10) {
-      setErrorMsg("Enter a valid Hypercore address.");
+    if (!recipient || !/^0x[0-9a-fA-F]{40}$/.test(recipient.trim())) {
+      setErrorMsg("Enter a valid Hypercore address (0x + 40 hex characters).");
       return;
     }
     const parsedAmt = parseFloat(amount);
@@ -541,7 +541,7 @@ function WalletDemo() {
 
   const connectAndQuote = useCallback(async () => {
     if (!isConnected) { openConnectModal?.(); return; }
-    if (!recipient || recipient.trim().length < 10) { setErrMsg("Enter a valid Hypercore recipient address."); return; }
+    if (!recipient || !/^0x[0-9a-fA-F]{40}$/.test(recipient.trim())) { setErrMsg("Enter a valid Hypercore address (0x + 40 hex characters)."); return; }
     const parsedAmt = parseFloat(amount);
     if (!amount || isNaN(parsedAmt) || parsedAmt <= 0) { setErrMsg("Enter a valid amount greater than 0."); return; }
     setStep("quoting"); setErrMsg("");
