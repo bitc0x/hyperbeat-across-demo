@@ -289,9 +289,8 @@ function DepositDemo() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <InfoBox>
-        <strong style={{ color: HB_TEXT }}>Omnichain deposit address.</strong>{" "}
-        Across generates a unique address that accepts USDC from any chain and delivers it 1:1, no slippage, as USDH in Hypercore.
-        No wallet connection required.
+        <strong style={{ color: HB_TEXT }}>One address, every chain.</strong>{" "}
+        Instead of telling users which network to use, Hyperbeat gives each user one address that accepts USDC from any chain. Across routes it 1:1, no slippage, into USDH in Hypercore. No wrong-network warning. No bounce.
       </InfoBox>
 
       {/* Flow header */}
@@ -783,12 +782,11 @@ export default function Home() {
               letterSpacing: "-0.04em", color: HB_TEXT,
               margin: "0 0 10px", lineHeight: 1.1,
             }}>
-              Fund from any chain.<br />
-              <span style={{ color: HB_GREEN }}>Land on Hyperliquid.</span>
+              No more "wrong network" drop-off.<br />
+              <span style={{ color: HB_GREEN }}>One address. Any chain. Into Hypercore.</span>
             </h1>
             <p style={{ fontSize: 15, color: HB_MUTED, lineHeight: 1.7, maxWidth: 580 }}>
-              Across generates a unique deposit address per user. Send USDC from any chain.
-              It arrives as USDH on Hyperliquid in approximately 2 seconds. No wallet connection required. Zero fees to the end user.
+              Today users see a warning telling them which chain to use, and some leave. Across generates one deposit address per user that accepts USDC from any chain and delivers it 1:1, no slippage, as USDH directly into Hypercore. No wrong-network warnings. No wallet connection required. No drop-off.
             </p>
           </div>
 
